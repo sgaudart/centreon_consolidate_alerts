@@ -1,18 +1,15 @@
 # centreon_consolidate_alerts
 
 ## The goal
-Ce script répond à un besoin de faire du reporting sur les alertes Centreon. <br> <br>
+This script is helpfull to generate statistics on Centreon alerts. <br> <br>
 
 ## Technical specification
-Ce script va lire les données des 3 tables centreon_storage.logs + downtimes + acknownledgements
-dans le créneau horaire [--start => --end]. Le script va alimenter la table [your_database].Alert
-où chaque entrée de la table représente une alerte Centreon. Le fichier de conf permet de renseigner
-les informations de connexion pour la database centreon_storage et votre database pour la table Alert. <br>
-<b>NOTE:</b> l'option --conf est obligatoire
+This script will read data from the 3 tables centeron_storage.logs + downtimes + acknownledgements in the time slot [--start => --end]. The script will feed the table [your_database] .Alert where each entry in the table represents a Centreon alert. The conf file is used to populate the connection information for the database centreon_storage and your database for the Alert table. <br>
+<b>NOTE:</b> The --conf option is mandatory
 
 ## Requirements
 
-  - Centreon database
+  - Accessibility to Centreon database
   - a new database with the SQL table Alert (see the file Alert.sql)
   - Perl
   - mysql client
