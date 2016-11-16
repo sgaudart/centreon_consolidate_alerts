@@ -23,7 +23,7 @@ Centreon 2.5.4
 centreon_consolidate_alerts.pl --conf <conf_file.conf> : conf file
        [--start <DD-MM-YYYY>|<DD/MM>] default : start and end date is the last day
        [--end <DD-MM-YYYY>|<DD/MM>] default : start and end date is the last day
-       [--verbose] [--debug]\n";
+       [--verbose] [--debug]
 ```
 
 ## Utilisation 
