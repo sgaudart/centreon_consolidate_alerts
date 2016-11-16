@@ -1,7 +1,9 @@
 # centreon_consolidate_alerts
 
-In French : <br>
+## The goal
 Ce script répond à un besoin de faire du reporting sur les alertes Centreon. <br> <br>
+
+## Technical specification
 Ce script va lire les données des 3 tables centreon_storage.logs + downtimes + acknownledgements
 dans le créneau horaire [--start => --end]. Le script va alimenter la table [your_database].Alert
 où chaque entrée de la table représente une alerte Centreon. Le fichier de conf permet de renseigner
