@@ -2,7 +2,7 @@
 
 In French : <br>
 Ce script va lire les données des 3 tables centreon_storage.logs + downtimes + acknownledgements
-dans le créneau horaire [--start => --end]. Le script va alimenter la table <your_database>.Alert
+dans le créneau horaire [--start => --end]. Le script va alimenter la table [your_database].Alert
 où chaque entrée de la table représente une alerte Centreon. Le fichier de conf permet de renseigner
 les informations de connexion pour la database centreon_storage et votre database pour la table Alert.
 NOTE: l'option --conf est obligatoire
