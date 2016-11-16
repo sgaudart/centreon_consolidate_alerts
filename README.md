@@ -28,7 +28,7 @@ centreon_consolidate_alerts.pl --conf <conf_file.conf> : conf file
 
 ## Utilisation 
 
-Launch the script (if I want stats about the October month in the table Alert) :
+Launch the script (if you want data about the October month in the table Alert) :
 ```erb
 # ./centreon_consolidate_alerts.pl --start 01/10 --end 01/11  --verbose --conf database_info.conf > centreon_consolidate_alerts.log
 ```
