@@ -36,7 +36,7 @@ Launch the script :
 
 ## Examples 
 
-TOP10 unavailability with downtime supported :
+TOP10 unavailability with downtime supported (<b>if your ping service is called 'ping'</b>) :
 ```erb
 SELECT host_name, service_description, service_id, SUM( interpreted_duration ) AS tps_indispo
 FROM Alert
