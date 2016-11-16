@@ -33,6 +33,9 @@ Launch the script (if you want data about the October month in the table Alert) 
 # ./centreon_consolidate_alerts.pl --start 01/10 --end 01/11  --verbose --conf database_info.conf > centreon_consolidate_alerts.log
 ```
 
+## Performance
+
+
 ## Examples 
 
 TOP10 unavailability hosts with downtime supported (<b>if your ping service is called 'ping'</b>) :
