@@ -46,7 +46,9 @@ WHERE service_description LIKE 'ping'
 GROUP BY service_id
 ORDER BY tps_indispo DESC
 LIMIT 10
-
-
 ```
 
+List alerts with downtime(s) but acknowledged  :
+```erb
+SELECT * FROM `Alert` WHERE downtime_occurence > 0 and acknowledgement_id is NOT NULL
+```
