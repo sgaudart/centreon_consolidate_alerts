@@ -35,7 +35,7 @@ Launch the script (if you want data about the October month in the table Alert) 
 
 ## Performance
 
-Example : for 780 alerts/day => 1 mn processing for the script to feed the table Alert.
+Example : for 780 alerts/day => 1 mn/day of work for the script to feed the table Alert.
 
 ## Examples 
 
