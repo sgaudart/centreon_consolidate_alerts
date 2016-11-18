@@ -45,7 +45,7 @@ Example : for 780 alerts/day => 1 mn/day of work for the script to feed the tabl
 
 ## Examples 
 
-TOP10 unavailability hosts with downtime supported (<b>if your ping service is called 'ping'</b>) :
+TOP10 unavailability hosts with downtime supported (**if your ping service is called 'ping'**) :
 ```erb
 SELECT host_name, service_description, service_id, SUM( interpreted_duration ) AS tps_indispo
 FROM Alert
