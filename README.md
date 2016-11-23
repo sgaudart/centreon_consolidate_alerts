@@ -7,7 +7,7 @@ This script is helpfull to generate reports on Centreon alerts. <br> <br>
 This script will read data from the 3 tables centeron_storage.logs + downtimes + acknownledgements in the time slot [--start => --end].
 <br>
 
-The script will feed a new custom table [your_database].Alert where each entry in the table represents a Centreon alert. See info in the attached documentation [table_Alert.pdf](https://github.com/sgaudart/centreon_consolidate_alerts/blob/master/table_Alert.pdf).
+The script will feed a [new custom table [your_database].Alert](https://github.com/sgaudart/centreon_consolidate_alerts/blob/master/table_Alert.sql) where each entry in the table represents a Centreon alert. See info in the attached documentation [table_Alert.pdf](https://github.com/sgaudart/centreon_consolidate_alerts/blob/master/table_Alert.pdf).
 <br>
 
 The conf file is used to populate the connection information for the database centreon_storage and your database for the Alert table. <br>
