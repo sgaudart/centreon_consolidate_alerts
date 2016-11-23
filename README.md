@@ -16,7 +16,7 @@ The conf file is used to populate the connection information for the database ce
 ## Requirements
 
   - Accessibility to Centreon database
-  - a new database with the SQL table Alert (see the file Alert.sql)
+  - a new database with the SQL table Alert (see the file [Alert.sql](https://github.com/sgaudart/centreon_consolidate_alerts/blob/master/Alert.sql))
   - Perl
   - mysql client
 
