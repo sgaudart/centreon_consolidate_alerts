@@ -24,6 +24,10 @@ The conf file is used to populate the connection information for the database ce
 
 Centreon 2.5.4
 
+## Roadmap
+
+In construction...
+
 ## Options
 ```erb
 centreon_consolidate_alerts.pl --conf <conf_file.conf> : conf file
