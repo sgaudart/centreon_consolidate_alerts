@@ -1,5 +1,6 @@
 # centreon_consolidate_alerts
 
+## Introduction
 This script is helpfull to generate reports on Centreon alerts. <br> <br>
 
 ## Technical specification
