@@ -1,10 +1,9 @@
 # centreon_consolidate_alerts
 
-## The goal
 This script is helpfull to generate reports on Centreon alerts. <br> <br>
 
 ## Technical specification
-This script will read data from the 3 tables centeron_storage.logs + downtimes + acknownledgements in the time slot [--start => --end].
+This script will read data from the 3 tables centeron_storage.logs + downtimes + acknownledgements in your desired time range [use option --start => --end].
 <br>
 
 The script will feed a [new custom table [your_database].Alert](https://github.com/sgaudart/centreon_consolidate_alerts/blob/master/Alert.sql) where each entry in the table represents a Centreon alert. See info in the attached documentation [table_Alert.pdf](https://github.com/sgaudart/centreon_consolidate_alerts/blob/master/table_Alert.pdf).
