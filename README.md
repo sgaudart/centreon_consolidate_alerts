@@ -1,7 +1,7 @@
 # centreon_consolidate_alerts
 
 ## Introduction
-This script is helpfull to generate reports on Centreon alerts. <br> <br>
+This script is helpfull to generate reports on Centreon alerts. The script [centreon_consolidate_alerts.pl](https://github.com/sgaudart/centreon_consolidate_alerts/blob/master/centreon_consolidate_alerts.pl) will generate a SQL table with all the useful information for Centreon alerts<br> <br>
 
 ## Technical specification
 This script will read data from the 3 tables centeron_storage.logs + downtimes + acknownledgements in your desired time range [use option --start => --end].
