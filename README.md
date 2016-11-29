@@ -22,8 +22,8 @@ The conf file is used to populate the connection information for the database ce
 
 ## Tested with...
 
-Centreon 2.5.4
-Perl v5.10.1
+- Centreon 2.5.4
+- Perl v5.10.1
 
 ## Roadmap
 
