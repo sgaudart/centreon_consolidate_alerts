@@ -23,22 +23,24 @@
 # 11/10/2016  10         SGA       fix bug : Argument "NULL" isn't numeric in numeric gt (>)
 # 14/10/2016  11         SGA       add option --conf
 # 24/10/2016  12         SGA       change fonction ChangeDateToUnixTime + yesterday default
+# 02/12/2016  13         SGA       fix bug for the function FinalizeAlert() + use Config::General
 #======================================================================
 
 use strict;
 use warnings;
-use Getopt::Long;
+use Getopt::Long; # for the management of options
 use Time::Local;
+use Config::General; # for reading config file
 
 my $start=""; # option --start
 my $end=""; # option --end
 my $start_epoch=0;
 my $end_epoch=0;
 my $conf_file="";
+my $conf; # 
+our %config;
 
-my $verbose;
-my $debug;
-my $help;
+my ($verbose, $debug, $help); # basic options
 
 GetOptions (
 "start=s" => \$start, # integer
@@ -50,8 +52,6 @@ GetOptions (
 or die("Error in command line arguments\n");
 
 my $line;
-my ($hostCentstorage,$dbnameCentstorage,$userCentstorage,$passCentstorage); # connection to centreon_storage
-our ($hostAlert,$dbnameAlert,$userAlert,$passAlert); # connection to the new database with table Alert
 
 my $sqlline=0; # line counter
 my ($la_id,$la_endtime,$la_status); # Last Alert field
@@ -71,7 +71,7 @@ my ($ack_id, $entry_time); # ack fields
 
 if (($help) || ($conf_file eq ''))
 {
-	print "$0 v.12
+	print "$0 v.13
 Sebastien Gaudart <sgaudart\@capensis.fr>
 
 Ce script va lire les données des 3 tables centreon_storage.logs + downtimes + acknownledgements
@@ -82,8 +82,8 @@ NOTE: l'option --conf est obligatoire
 	
 Utilisation :
  $0 --conf <conf_file.conf> : conf file
-       [--start <DD-MM-YYYY>] default : start & end date is the last day
-       [--end <DD-MM-YYYY>] default : start & end date is the last day
+       [--start <DD-MM-YYYY>] default : yesterday
+       [--end <DD-MM-YYYY>] default : yestarday
        [--verbose] [--debug]\n";
 	
 	exit;
@@ -118,28 +118,14 @@ print "[DEBUG] end=$end => end_epoch=$end_epoch\n" if $debug;
 # READING THE CONF FILE
 ###############################
 
-open (CONFFD, "$conf_file") or die "Can't open configuration file  : $conf_file\n" ; # reading
-while (<CONFFD>)
-{
-	$line=$_;
-	chomp($line); # delete the carriage return
-	if ($line =~ /^hostCentstorage(.*)$/) { $hostCentstorage = $1; $hostCentstorage =~ s/[ \t]+//; }
-	if ($line =~ /^dbnameCentstorage(.*)$/) { $dbnameCentstorage = $1; $dbnameCentstorage =~ s/[ \t]+//; }
-	if ($line =~ /^userCentstorage(.*)$/) { $userCentstorage = $1; $userCentstorage =~ s/[ \t]+//; }
-	if ($line =~ /^passCentstorage(.*)$/) { $passCentstorage = $1; $passCentstorage =~ s/[ \t]+//; }
-	
-	if ($line =~ /^hostAlert(.*)$/) { $hostAlert = $1; $hostAlert =~ s/[ \t]+//; }
-	if ($line =~ /^dbnameAlert(.*)$/) { $dbnameAlert = $1; $dbnameAlert =~ s/[ \t]+//; }
-	if ($line =~ /^userAlert(.*)$/) { $userAlert = $1; $userAlert =~ s/[ \t]+//; }
-	if ($line =~ /^passAlert(.*)$/) { $passAlert = $1; $passAlert =~ s/[ \t]+//; }
-}
-close CONFFD;
-
-my $sqlprefix = "mysql --batch -h $hostCentstorage -u $userCentstorage -p$passCentstorage -D $dbnameCentstorage -e";
+$conf = Config::General->new("$conf_file");
+%config = $conf->getall;
 
 ###################################################
 # SQL REQUEST FOR DOWNTIMES > FILE downtimes
 ###################################################
+
+my $sqlprefix = "mysql --batch -h $config{hostCentstorage} -u $config{userCentstorage} -p$config{passCentstorage} -D $config{dbnameCentstorage} -e";
 
 #my $sqlrequest = "SELECT downtime_id,host_id,service_id,author,comment_data,actual_start_time,actual_end_time,end_time FROM downtimes WHERE (actual_start_time>$start_epoch and actual_start_time<$end_epoch) OR (actual_end_time>$start_epoch and actual_end_time<$end_epoch)";
 my $sqlrequest = "SELECT downtime_id,host_id,service_id,author,comment_data,actual_start_time,actual_end_time FROM downtimes WHERE (actual_start_time>$start_epoch and actual_start_time<$end_epoch) OR (actual_end_time>$start_epoch and actual_end_time<$end_epoch) OR (actual_start_time<$start_epoch and actual_end_time>$end_epoch)";
@@ -226,8 +212,8 @@ while (<LOGSFD>)
 	{
 		if ($la_id ne 'NULL' && $la_endtime eq 'NULL') # last alarm exist & not finished
 		{
-			# last alarm exist & not finished => update field end_time
-			FinalizeAlert($la_id,$la_endtime);
+			# last alarm exist & not finished => update field end_time with ctime
+			FinalizeAlert($la_id,$ctime);
 		} # do nothing else because we don't know the beginning of the alert => so no duration
 	}
 	else # WARNING|CRITICAL|UNKNOWN
@@ -265,7 +251,7 @@ while (<LOGSFD>)
 				else # il s'agit d'une nouvelle alerte mais status différent
 				{
 					# MAJ à champ end_time pour la dernière alerte dans la table Alert
-					FinalizeAlert($la_id,$la_endtime);
+					FinalizeAlert($la_id,$ctime);
 					
 					# création d'une nouvelle alerte dans le status actuel ($status)
 					ExecQuery("INSERT INTO Alert (id,host_id,host_name,service_id,service_description,status,output,hard_start_time) VALUES ($log_id,$host_id,\"$host_name\",$service_id,\"$service_description\",$status,\"$output\",$ctime)");
@@ -314,7 +300,7 @@ sub ExecQuery
 	my $sqlquery = $_[0]; # ARG1 : requete SQL
 	my $sqlline=0;
 	
-	my $sqlprefix = "mysql --batch -h $hostAlert -u $userAlert -p$passAlert -D $dbnameAlert -e";
+	my $sqlprefix = "mysql --batch -h $config{hostAlert} -u $config{userAlert} -p$config{passAlert} -D $config{dbnameAlert} -e";
 	
 	print "[DEBUG] sqlquery=$sqlquery\n" if $debug;
 	open (OUTFD, "$sqlprefix '$sqlquery' |");
@@ -367,7 +353,7 @@ sub SearchDowntimes # retourne une liste de downtime_id qui impacte un service (
 sub FinalizeAlert # permet de stocker le end_time + chercher les downtimes + calcul de downtime_occurence (+ recherche d'un ack)
 {
 	my $la_id = $_[0]; # ARG1 : last alert id
-	my $end_time = $_[1]; # ARG1 : end_time
+	my $end_time = $_[1]; # ARG2 : end_time
 	
 	my $downtimes_list="";
 	my @down_list;
@@ -375,32 +361,35 @@ sub FinalizeAlert # permet de stocker le end_time + chercher les downtimes + cal
 	my $interpreted_duration;
 	my $ack_id;
 	my $la_rawduration;
+	
 	# MAJ à champ end_time pour la dernière alerte dans la table Alert
-	ExecQuery("UPDATE Alert SET end_time = $ctime WHERE id = $la_id");
+	#ExecQuery("UPDATE Alert SET end_time = $ctime WHERE id = $la_id");
+	ExecQuery("UPDATE Alert SET end_time = $end_time WHERE id = $la_id"); # fix bug v13
+	
 	print "> END #$la_id" if $verbose;
 	
 	# we guess the beginning of the alerte => soft_start_time or hard_start_time ?
-	my $la_time = ExecQuery("SELECT soft_start_time,hard_start_time,end_time FROM Alert WHERE id = $la_id");
-	my ($la_softstart, $la_hardtime, $la_endtime) = split(' ',$la_time);
+	my $la_data = ExecQuery("SELECT service_id,soft_start_time,hard_start_time,end_time FROM Alert WHERE id = $la_id");
+	my ($la_service_id, $la_softstart, $la_hardtime, $la_endtime) = split(' ',$la_data);
 	if ($la_softstart eq 'NULL')
 	{
 		# alerte HARD
 		$la_rawduration=$la_endtime-$la_hardtime;
-		$downtimes_list = SearchDowntimes($service_id,$la_hardtime,$la_endtime); # input : service_id,alert start,alert end
+		$downtimes_list = SearchDowntimes($la_service_id,$la_hardtime,$la_endtime); # input : service_id,alert start,alert end
 		@down_list = split (' ',$downtimes_list);
 		$la_occurrence = $#down_list+1;
-		$interpreted_duration=CalculateInterpretedDuration($service_id,$la_hardtime,$la_endtime,$la_occurrence,$downtimes_list);
-		$ack_id=SearchAcknownledgement($service_id,$la_hardtime,$la_endtime);
+		$interpreted_duration=CalculateInterpretedDuration($la_service_id,$la_hardtime,$la_endtime,$la_occurrence,$downtimes_list);
+		$ack_id=SearchAcknownledgement($la_service_id,$la_hardtime,$la_endtime);
 	}
 	else
 	{
 		# alerte SOFT
 		$la_rawduration=$la_endtime-$la_softstart;
-		$downtimes_list = SearchDowntimes($service_id,$la_softstart,$la_endtime); # input : service_id,alert start,alert end
+		$downtimes_list = SearchDowntimes($la_service_id,$la_softstart,$la_endtime); # input : service_id,alert start,alert end
 		@down_list = split (' ',$downtimes_list);
 		$la_occurrence = $#down_list+1;
-		$interpreted_duration=CalculateInterpretedDuration($service_id,$la_softstart,$la_endtime,$la_occurrence,$downtimes_list);
-		$ack_id=SearchAcknownledgement($service_id,$la_softstart,$la_endtime);
+		$interpreted_duration=CalculateInterpretedDuration($la_service_id,$la_softstart,$la_endtime,$la_occurrence,$downtimes_list);
+		$ack_id=SearchAcknownledgement($la_service_id,$la_softstart,$la_endtime);
 	}
 
 	ExecQuery("UPDATE Alert SET raw_duration=$la_rawduration, acknowledgement_id=$ack_id, downtime_id=\"$downtimes_list\", downtime_occurrence=$la_occurrence, interpreted_duration=$interpreted_duration WHERE id = $la_id");
