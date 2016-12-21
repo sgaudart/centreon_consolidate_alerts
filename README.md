@@ -37,7 +37,7 @@ centreon_consolidate_alerts.pl --conf <conf_file.conf> : conf file
        [--verbose] [--debug]
 ```
 
-## Utilisation 
+## Utilization 
 
 Launch the script (if you want data about the October month in the table Alert) :
 ```erb
