@@ -24,6 +24,7 @@
 # 14/10/2016  11         SGA       add option --conf
 # 24/10/2016  12         SGA       change fonction ChangeDateToUnixTime + yesterday default
 # 02/12/2016  13         SGA       fix bug for the function FinalizeAlert() + use Config::General
+# 16/12/2016  14         SGA       improve config file whith Config::General + improve ChangeDateToUnixTime()
 #======================================================================
 
 use strict;
@@ -65,13 +66,40 @@ my $downtimes_list;
 our %ack; # hash list for acknowledgement ex: $ack{service_id}{$ack_id}{entry_time}
 my ($ack_id, $entry_time); # ack fields
 
+
+###############################
+# PROCESSING $start + $end => unix time
+###############################
+
+print "[DEBUG] TIMERANGE : start=$start => end=$end\n" if $debug;
+
+if (($start eq "") && ($end eq ""))
+{
+	# --start or --end not defined => default : yesterday
+	my @now = localtime(time);
+	my $end_day=$now[3];
+	my $end_month=$now[4]+1;
+	my $year = $now[5]+1900;
+	$end="$end_day-$end_month-$year";
+
+	$end_epoch = ChangeDateToUnixTime($end);
+	$start_epoch = $end_epoch - 86400;
+}
+else
+{
+	$start_epoch = ChangeDateToUnixTime($start);
+	$end_epoch = ChangeDateToUnixTime($end);
+}
+
+print "[DEBUG] TIMERANGE : start_epoch=$start_epoch => end_epoch=$end_epoch\n" if $debug;
+
 ###############################
 # HELP
 ###############################
 
 if (($help) || ($conf_file eq ''))
 {
-	print "$0 v.13
+	print "$0 v.14
 Sebastien Gaudart <sgaudart\@capensis.fr>
 
 Ce script va lire les données des 3 tables centreon_storage.logs + downtimes + acknownledgements
@@ -90,31 +118,6 @@ Utilisation :
 }
 
 ###############################
-# PROCESSING $start + $end => unix time
-###############################
-
-if (($start eq "") || ($end eq ""))
-{
-	# --start or --end not defined => default : yesterday
-	my @now = localtime(time);
-	my $end_day=$now[3];
-	my $end_month=$now[4]+1;
-	my $year = $now[5]+1900;
-	$end="$end_day-$end_month-$year";
-
-	$end_epoch = ChangeDateToUnixTime($end);
-	$start_epoch = $end_epoch - 86400;
-}
-else
-{
-	$start_epoch = ChangeDateToUnixTime($start);
-	$end_epoch = ChangeDateToUnixTime($end);
-}
-
-print "[DEBUG] start=$start => start_epoch=$start_epoch\n" if $debug;
-print "[DEBUG] end=$end => end_epoch=$end_epoch\n" if $debug;
-
-###############################
 # READING THE CONF FILE
 ###############################
 
@@ -125,7 +128,7 @@ $conf = Config::General->new("$conf_file");
 # SQL REQUEST FOR DOWNTIMES > FILE downtimes
 ###################################################
 
-my $sqlprefix = "mysql --batch -h $config{hostCentstorage} -u $config{userCentstorage} -p$config{passCentstorage} -D $config{dbnameCentstorage} -e";
+my $sqlprefix = "mysql --batch -h $config{centreon}{host} -u $config{centreon}{user} -p$config{centreon}{password} -D $config{centreon}{dbname} -e";
 
 #my $sqlrequest = "SELECT downtime_id,host_id,service_id,author,comment_data,actual_start_time,actual_end_time,end_time FROM downtimes WHERE (actual_start_time>$start_epoch and actual_start_time<$end_epoch) OR (actual_end_time>$start_epoch and actual_end_time<$end_epoch)";
 my $sqlrequest = "SELECT downtime_id,host_id,service_id,author,comment_data,actual_start_time,actual_end_time FROM downtimes WHERE (actual_start_time>$start_epoch and actual_start_time<$end_epoch) OR (actual_end_time>$start_epoch and actual_end_time<$end_epoch) OR (actual_start_time<$start_epoch and actual_end_time>$end_epoch)";
@@ -251,7 +254,7 @@ while (<LOGSFD>)
 				else # il s'agit d'une nouvelle alerte mais status différent
 				{
 					# MAJ à champ end_time pour la dernière alerte dans la table Alert
-					FinalizeAlert($la_id,$ctime);
+					FinalizeAlert($la_id,$ctime); # fix bug v13
 					
 					# création d'une nouvelle alerte dans le status actuel ($status)
 					ExecQuery("INSERT INTO Alert (id,host_id,host_name,service_id,service_description,status,output,hard_start_time) VALUES ($log_id,$host_id,\"$host_name\",$service_id,\"$service_description\",$status,\"$output\",$ctime)");
@@ -274,11 +277,11 @@ sub ChangeDateToUnixTime # anything like date => unix time (in sec)
 {
 	my $date = $_[0]; # 1 ARG : date to transform
 	my $epoch="";
-	if ($date =~ /^[0-9]+$/)
+	if ($date =~ /^1[0-9]{9}$/) # input is already unixtime
 	{
 		$epoch=$date;
 	}
-	else
+	elsif ($date =~ /^[0-2].*$/)
 	{
 		$date =~ s/\./-/g; # global substitution "." => "-"
 		$date =~ s/\//-/g; # global substitution "/" => "-"
@@ -291,6 +294,10 @@ sub ChangeDateToUnixTime # anything like date => unix time (in sec)
 		}
 		$epoch = timelocal(0,0,0,$day,$month-1,$year);
 	}
+	else
+	{
+		die "$0 : verifiez vos dates (options --start ou --end)";
+	}
 	return $epoch;
 }
 
@@ -300,7 +307,7 @@ sub ExecQuery
 	my $sqlquery = $_[0]; # ARG1 : requete SQL
 	my $sqlline=0;
 	
-	my $sqlprefix = "mysql --batch -h $config{hostAlert} -u $config{userAlert} -p$config{passAlert} -D $config{dbnameAlert} -e";
+	my $sqlprefix = "mysql --batch -h $config{Alert}{host} -u $config{Alert}{user} -p$config{Alert}{password} -D $config{Alert}{dbname} -e";
 	
 	print "[DEBUG] sqlquery=$sqlquery\n" if $debug;
 	open (OUTFD, "$sqlprefix '$sqlquery' |");
